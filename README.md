@@ -1,6 +1,6 @@
-# LMSYS Chatbot Arena - Human Preference Prediction
+# LLM Classification Finetuning
 
-Kaggle competition: https://www.kaggle.com/competitions/lmsys-chatbot-arena
+Kaggle competition: https://www.kaggle.com/competitions/llm-classification-finetuning
 
 Predict which of two LLM responses a human judge preferred (model A, model B, or tie),
 given the prompt and both responses. Code competition - the final submission is a
