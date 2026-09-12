@@ -1,0 +1,52 @@
+data:
+  path: "data/processed/classical/train_features.parquet"
+  target_col: "winner"
+  fold_col: "fold"
+  feature_cols:
+    - prompt_len_chars
+    - response_a_len_chars
+    - response_b_len_chars
+    - len_diff
+    - a_rel_len
+    - b_rel_len
+    - rel_len_diff
+    - a_n_bullets
+    - a_n_numbered
+    - a_n_headers
+    - a_n_bold
+    - a_n_code_blocks
+    - b_n_bullets
+    - b_n_numbered
+    - b_n_headers
+    - b_n_bold
+    - b_n_code_blocks
+    - n_bullets_diff
+    - n_numbered_diff
+    - n_headers_diff
+    - n_bold_diff
+    - n_code_blocks_diff
+    - a_refusal
+    - b_refusal
+    - refusal_diff
+
+logreg:
+  C: 1.0
+  max_iter: 1000
+  random_state: 42
+
+lightgbm:
+  objective: "multiclass"
+  num_class: 3
+  learning_rate: 0.05
+  num_leaves: 31
+  n_estimators: 2000
+  early_stopping_rounds: 100
+  random_state: 42
+  verbose: -1
+
+ensemble:
+  # weight on lightgbm predictions; logreg gets (1 - weight)
+  lgbm_weight: 0.95
+
+output:
+  res_dir: "experiments/00_manual_features/res"
