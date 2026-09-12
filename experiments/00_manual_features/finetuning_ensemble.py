@@ -3,11 +3,12 @@ import numpy as np
 from sklearn.metrics import log_loss
 import lightgbm as lgb
 from pathlib import Path
+from sklearn.preprocessing import LabelEncoder
 
 oof = pd.read_parquet("res/oof/oof_predictions.parquet")
 df = pd.read_parquet("../../data/processed/classical/train_features.parquet")
 
-from sklearn.preprocessing import LabelEncoder
+
 le = LabelEncoder()
 y_true = le.fit_transform(df["winner"])
 classes = le.classes_
