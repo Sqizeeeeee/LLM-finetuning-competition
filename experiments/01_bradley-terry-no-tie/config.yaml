@@ -1,0 +1,29 @@
+experiment_name: bradley_terry_deberta_v3_base
+seed: 42
+
+data:
+  path: data/processed/BT/train_bt.parquet
+  fold_col: fold
+  n_folds: 5
+
+model:
+  name: microsoft/deberta-v3-base
+  max_length: 512
+  pooling: cls  # TODO: сравнить с mean pooling по attention_mask на CV
+
+training:
+  batch_size: 8
+  epochs: 3
+  lr: 2.0e-5
+  warmup_ratio: 0.1
+  optimizer: adamw
+  scheduler: linear
+
+loss:
+  include_tie: true
+
+output:
+  res_dir: res
+  oof_dir: res/oof
+  plots_dir: res/plots
+  metrics_path: res/metrics.json
