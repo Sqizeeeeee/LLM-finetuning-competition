@@ -1,4 +1,4 @@
-from ast import literal_eval
+import json
 from pathlib import Path
 
 import numpy as np
@@ -14,21 +14,24 @@ OUT_PATH = OUT_DIR / "train_clean.parquet"
 N_FOLDS = 5
 RANDOM_STATE = 42
 
+TEXT_COLS = ["prompt", "response_a", "response_b"]
 DEDUP_COLS = ["prompt", "response_a", "response_b", "model_a", "model_b"]
+EMPTY_TURN = "[EMPTY]"
 
 
-def safe_parse(x: str) -> list[str]:
-    """Parse a serialized list-of-strings column. Falls back to
-    wrapping the raw string in a single-element list if parsing fails
-    or the result isn't a list (defensive, some rows may be malformed).
+def parse_turns(x: str) -> list[str]:
+    """Parse a JSON-serialized list of turns (i-th item = i-th dialog turn).
+
+    The raw columns are JSON, not Python literals: json.loads handles `null`
+    and JSON-only escapes that literal_eval chokes on. None / blank turns are
+    replaced with EMPTY_TURN so rows are kept. Raises if the value is not a
+    JSON list: the data is known to parse fully, so a failure should be loud.
     """
-    try:
-        parsed = literal_eval(x)
-        if isinstance(parsed, list):
-            return parsed
-    except (ValueError, SyntaxError):
-        pass
-    return [x]
+    parsed = json.loads(x)
+    if not isinstance(parsed, list):
+        raise ValueError(f"expected a JSON list, got {type(parsed).__name__}: {x[:100]!r}")
+    return [t if isinstance(t, str) and t.strip() else EMPTY_TURN for t in parsed]
+
 
 
 def sanitize_text(text: str) -> str:
@@ -36,13 +39,20 @@ def sanitize_text(text: str) -> str:
 
 
 def parse_text_columns(df: pd.DataFrame) -> pd.DataFrame:
-    for col in ["prompt", "response_a", "response_b"]:
-        parsed = df[col].apply(safe_parse)
-        df[f"{col}_text"] = parsed.apply(
+    parsed = {col: df[col].apply(parse_turns) for col in TEXT_COLS}
+
+    n_turns = parsed["prompt"].apply(len)
+    for col in ("response_a", "response_b"):
+        assert (parsed[col].apply(len) == n_turns).all(), \
+            f"{col}: number of turns differs from prompt"
+
+    for col in TEXT_COLS:
+        n_empty = parsed[col].apply(lambda turns: EMPTY_TURN in turns).sum()
+        print(f"[parse] {col}: {n_empty} rows with an empty turn replaced by {EMPTY_TURN}")
+        df[f"{col}_text"] = parsed[col].apply(
             lambda turns: sanitize_text(" ".join(turns).strip())
         )
     return df
-
 
 def deduplicate(df: pd.DataFrame) -> pd.DataFrame:
     """Drop fully duplicated rows (same input, same target).
