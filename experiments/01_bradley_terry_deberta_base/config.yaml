@@ -1,5 +1,6 @@
 experiment_name: 01_bradley_terry_deberta_base
 seed: 42
+device: auto
 
 data:
   path: data/processed/BT/train_bt.parquet
@@ -8,11 +9,11 @@ data:
   prompt_col: prompt_text
   response_a_col: response_a_text
   response_b_col: response_b_text
-  winner_col: winner
+  winner_col: winner  # "a" / "b" / "tie"
 
 model:
   backbone: microsoft/deberta-v3-base
-  pooling: cls
+  pooling: cls          # cls | mean
   max_length: 1024
   dropout: 0.1
   delta_init: 0.0
@@ -23,12 +24,12 @@ train:
   eval_batch_size: 16
   grad_accum_steps: 1
   lr: 2.0e-5
-  head_lr: 1.0e-4
+  head_lr: 1.0e-4        # lr for the reward head + delta (separate param group)
   weight_decay: 0.01
   warmup_ratio: 0.06
-  scheduler: cosine
+  scheduler: cosine       # cosine | linear
   max_grad_norm: 1.0
-  precision: fp16
+  precision: fp16         # fp16 | fp32  (no bf16 / FA2 on Kaggle T4 / P100)
   num_workers: 2
   log_every_n_steps: 50
   eval_every_n_steps: null

@@ -1,0 +1,42 @@
+experiment_name: 01_bradley_terry_deberta_base_smoke_test
+seed: 42
+device: cpu  # DeBERTa attention crashes on MPS (MPSNDArrayMatrixMultiplication dtype assert); force CPU locally
+
+data:
+  path: data/processed/BT/train_bt.parquet
+  n_folds: 5
+  fold_col: fold
+  prompt_col: prompt_text
+  response_a_col: response_a_text
+  response_b_col: response_b_text
+  winner_col: winner
+
+model:
+  backbone: microsoft/deberta-v3-base
+  pooling: cls
+  max_length: 256        # shorter than the real 1024, just to run fast
+  dropout: 0.1
+  delta_init: 0.0
+
+train:
+  epochs: 1
+  batch_size: 4
+  eval_batch_size: 8
+  grad_accum_steps: 1
+  lr: 2.0e-5
+  head_lr: 1.0e-4
+  weight_decay: 0.01
+  warmup_ratio: 0.06
+  scheduler: cosine
+  max_grad_norm: 1.0
+  precision: fp16
+  num_workers: 0          # simpler to debug without worker processes
+  log_every_n_steps: 10
+  eval_every_n_steps: null
+
+folds_to_run: [0]         # only one fold, and only a slice of it (see note below)
+
+output:
+  dir: experiments/01_bradley_terry_deberta_base/res_smoke_test
+  save_oof: true
+  save_checkpoints: false
