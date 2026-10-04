@@ -1,10 +1,10 @@
 experiment_name: 01_bradley_terry_deberta_base
 seed: 42
-device: auto
+device: auto  # resolves to cuda on Kaggle; set to "cpu" if a backend misbehaves
 
 data:
   path: data/processed/BT/train_bt.parquet
-  n_folds: 5
+  n_folds: 4            # NOTE: was 5; cut to 4 folds as a deliberate time/budget tradeoff (see notes)
   fold_col: fold
   prompt_col: prompt_text
   response_a_col: response_a_text
@@ -16,25 +16,35 @@ model:
   pooling: cls          # cls | mean
   max_length: 1024
   dropout: 0.1
-  delta_init: 0.0
+  delta_init: 0.0        # initial value of the learnable delta parameter
 
 train:
-  epochs: 3
-  batch_size: 8
-  eval_batch_size: 16
-  grad_accum_steps: 1
+  epochs: 4               # NOTE: was 3; bumped to 4 after reward collapse fix (see notes)
+  batch_size: 4            # NOTE: was 8; reduced + grad_accum_steps added to fix OOM w/ gradient checkpointing
+  eval_batch_size: 8
+  grad_accum_steps: 2      # effective batch size = batch_size * grad_accum_steps = 8
   lr: 2.0e-5
-  head_lr: 1.0e-4        # lr for the reward head + delta (separate param group)
+  head_lr: 2.0e-5          # NOTE: was 1.0e-4 (5x lr) — this caused delta to collapse to the class prior
+                            # before the encoder learned anything; fixed by matching head_lr to lr.
+                            # Current result (fold 0, 3 epochs under this config): val_log_loss
+                            # plateaus around 1.31, still worse than the constant-prior baseline
+                            # (~1.097) -- this config is suspected to now be too conservative for the
+                            # randomly-initialized head and needs revisiting (e.g. separate, smaller lr
+                            # for delta specifically vs. a larger one for reward_head).
   weight_decay: 0.01
   warmup_ratio: 0.06
   scheduler: cosine       # cosine | linear
   max_grad_norm: 1.0
   precision: fp16         # fp16 | fp32  (no bf16 / FA2 on Kaggle T4 / P100)
   num_workers: 2
-  log_every_n_steps: 50
-  eval_every_n_steps: null
+  log_every_n_steps: 200
+  checkpoint_every_n_steps: 1000  # mid-epoch checkpoint, in addition to the epoch-boundary one
 
-folds_to_run: null
+folds_to_run: [0, 1, 2, 3]  # NOTE: was all 5 folds (null); cut to first 4
+
+resume_from: null  # set to a path (e.g. a downloaded+reuploaded Kaggle dataset's res/ dir) to resume
+                     # after a session timeout; must point at a run using the SAME config (lr, head_lr,
+                     # epochs, etc.) — resuming into a changed config is not supported by this script.
 
 output:
   dir: experiments/01_bradley_terry_deberta_base/res

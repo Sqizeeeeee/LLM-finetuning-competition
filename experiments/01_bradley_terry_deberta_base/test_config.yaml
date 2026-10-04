@@ -4,7 +4,7 @@ device: cpu  # DeBERTa attention crashes on MPS (MPSNDArrayMatrixMultiplication 
 
 data:
   path: data/processed/BT/train_bt.parquet
-  n_folds: 5
+  n_folds: 4
   fold_col: fold
   prompt_col: prompt_text
   response_a_col: response_a_text
@@ -24,7 +24,7 @@ train:
   eval_batch_size: 8
   grad_accum_steps: 1
   lr: 2.0e-5
-  head_lr: 1.0e-4
+  head_lr: 2.0e-5         # matches the real config.yaml (equal to lr, not 5x)
   weight_decay: 0.01
   warmup_ratio: 0.06
   scheduler: cosine
@@ -32,9 +32,11 @@ train:
   precision: fp16
   num_workers: 0          # simpler to debug without worker processes
   log_every_n_steps: 10
-  eval_every_n_steps: null
+  checkpoint_every_n_steps: 30  # exercise the mid-epoch checkpoint path even on a short run
 
-folds_to_run: [0]         # only one fold, and only a slice of it (see note below)
+folds_to_run: [0]         # only one fold
+
+resume_from: null
 
 output:
   dir: experiments/01_bradley_terry_deberta_base/res_smoke_test

@@ -31,12 +31,13 @@ class RewardModel(nn.Module):
         self.pooling = pooling
 
         config = AutoConfig.from_pretrained(backbone)
-        # Some checkpoints (e.g. microsoft/deberta-v3-base) set torch_dtype
-        # in config.json to float16; from_pretrained would otherwise load
-        # half-precision weights by default and clash with the fp32
-        # reward_head below. fp16 training is handled by autocast in
-        # train.py, so weights are always loaded in float32 here.
+        # deberta-v3-base's config.json specifies torch_dtype float16;
+        # force fp32 weights so they match the fp32 reward_head below.
+        # fp16 training is handled by autocast, not by half-precision weights.
         self.encoder = AutoModel.from_pretrained(backbone, config=config, torch_dtype=torch.float32)
+        # Needed on a single T4 to avoid OOM at max_length=1024 with DeBERTa's
+        # disentangled attention; trades ~20-30% speed for memory.
+        self.encoder.gradient_checkpointing_enable()
 
         self.dropout = nn.Dropout(dropout)
         self.reward_head = nn.Linear(config.hidden_size, 1)
@@ -83,10 +84,6 @@ class RewardModel(nn.Module):
         p_b = torch.sigmoid(-d - self.delta)
         p_tie = (1.0 - p_a - p_b).clamp(min=self._eps)
 
-        # cross_entropy expects logits, not probabilities: log(p) works here
-        # because cross_entropy(logits) = -log(softmax(logits)) and we want
-        # -log(p) directly, i.e. log(p) as an unnormalized logit is fine
-        # since softmax(log(p)) == p when p already sums to 1.
         class_logits = torch.stack(
             [torch.log(p_a.clamp(min=self._eps)),
              torch.log(p_b.clamp(min=self._eps)),

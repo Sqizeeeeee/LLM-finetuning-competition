@@ -1,4 +1,3 @@
-
 from pathlib import Path
 
 import pandas as pd
@@ -43,6 +42,10 @@ class RewardPairDataset(Dataset):
         row = self.df.iloc[idx]
         prompt = row[self.prompt_col]
 
+        # text_pair=(prompt, response): standard sentence-pair format for
+        # DeBERTa ([CLS] prompt [SEP] response [SEP]). truncation="longest_first"
+        # (HF default) trims whichever side is longer, token by token, rather
+        # than always cutting the same side.
         enc_a = self.tokenizer(
             text=prompt,
             text_pair=row[self.response_a_col],
@@ -99,13 +102,12 @@ class RewardPairCollator:
 
 def load_fold_split(
     parquet_path: str | Path, fold: int, fold_col: str = "fold"
-        ) -> tuple[pd.DataFrame, pd.DataFrame]:
-
-        """Standard train/val split for one fold: val = rows in `fold`,
-        train = everything else. Matches the GroupKFold-by-prompt assignment
-        done in preprocessing/common.py.
-        """
-        df = pd.read_parquet(parquet_path)
-        train_df = df[df[fold_col] != fold]
-        val_df = df[df[fold_col] == fold]
-        return train_df, val_df
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Standard train/val split for one fold: val = rows in `fold`,
+    train = everything else. Matches the GroupKFold-by-prompt assignment
+    done in preprocessing/common.py.
+    """
+    df = pd.read_parquet(parquet_path)
+    train_df = df[df[fold_col] != fold]
+    val_df = df[df[fold_col] == fold]
+    return train_df, val_df
