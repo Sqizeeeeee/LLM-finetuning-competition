@@ -12,7 +12,7 @@ import yaml
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, get_cosine_schedule_with_warmup, get_linear_schedule_with_warmup
 
-from dataset import RewardPairCollator, RewardPairDataset, WINNER_TO_LABEL, load_fold_split
+from dataset import RewardPairCollator, RewardPairDataset, load_fold_split
 from reward_model import RewardModel
 
 
