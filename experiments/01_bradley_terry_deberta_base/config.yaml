@@ -24,13 +24,17 @@ train:
   eval_batch_size: 8
   grad_accum_steps: 2      # effective batch size = batch_size * grad_accum_steps = 8
   lr: 2.0e-5
-  head_lr: 2.0e-5          # NOTE: was 1.0e-4 (5x lr) — this caused delta to collapse to the class prior
+  head_lr: 1.0e-4          # NOTE: was 1.0e-4 (5x lr) — this caused delta to collapse to the class prior
                             # before the encoder learned anything; fixed by matching head_lr to lr.
                             # Current result (fold 0, 3 epochs under this config): val_log_loss
                             # plateaus around 1.31, still worse than the constant-prior baseline
                             # (~1.097) -- this config is suspected to now be too conservative for the
                             # randomly-initialized head and needs revisiting (e.g. separate, smaller lr
                             # for delta specifically vs. a larger one for reward_head).
+
+  delta_lr: 2.0e-6          # NOTE: new — delta used to share head_lr and won race to the class-prior
+                             # solution before the encoder learned anything (reward collapse). Now kept
+                             # deliberately slow, separate from reward_head's lr.
   weight_decay: 0.01
   warmup_ratio: 0.06
   scheduler: cosine       # cosine | linear

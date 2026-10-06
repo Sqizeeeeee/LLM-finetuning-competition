@@ -38,22 +38,20 @@ def get_device(requested: str = "auto") -> torch.device:
     return torch.device("cpu")
 
 
-def build_param_groups(model: RewardModel, lr: float, head_lr: float, weight_decay: float):
+def build_param_groups(model: RewardModel, lr: float, head_lr: float, delta_lr: float, weight_decay: float):
     no_decay = ("bias", "LayerNorm.weight", "layer_norm.weight")
-    encoder_decay, encoder_no_decay, head_params = [], [], []
+    encoder_decay, encoder_no_decay = [], []
 
     for name, param in model.encoder.named_parameters():
         if not param.requires_grad:
             continue
         (encoder_no_decay if any(nd in name for nd in no_decay) else encoder_decay).append(param)
 
-    head_params += list(model.reward_head.parameters())
-    head_params.append(model.delta)
-
     return [
         {"params": encoder_decay, "lr": lr, "weight_decay": weight_decay},
         {"params": encoder_no_decay, "lr": lr, "weight_decay": 0.0},
-        {"params": head_params, "lr": head_lr, "weight_decay": 0.0},
+        {"params": list(model.reward_head.parameters()), "lr": head_lr, "weight_decay": 0.0},
+        {"params": [model.delta], "lr": delta_lr, "weight_decay": 0.0},
     ]
 
 
@@ -194,7 +192,7 @@ def run_fold(cfg: dict, fold: int, tokenizer, device,
     ).to(device)
 
     optimizer = torch.optim.AdamW(
-        build_param_groups(model, cfg["train"]["lr"], cfg["train"]["head_lr"], cfg["train"]["weight_decay"])
+        build_param_groups(model, cfg["train"]["lr"], cfg["train"]["head_lr"], cfg["train"]["delta_lr"], cfg["train"]["weight_decay"])
     )
 
     n_steps_per_epoch = len(train_ds) // cfg["train"]["batch_size"] // cfg["train"]["grad_accum_steps"]

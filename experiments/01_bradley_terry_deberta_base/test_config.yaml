@@ -24,15 +24,16 @@ train:
   eval_batch_size: 8
   grad_accum_steps: 1
   lr: 2.0e-5
-  head_lr: 2.0e-5         # matches the real config.yaml (equal to lr, not 5x)
+  head_lr: 1.0e-4         # matches the real config.yaml (equal to lr, not 5x)
+  delta_lr: 2.0e-6          # matches the real config.yaml
   weight_decay: 0.01
   warmup_ratio: 0.06
   scheduler: cosine
   max_grad_norm: 1.0
   precision: fp16
   num_workers: 0          # simpler to debug without worker processes
-  log_every_n_steps: 10
-  checkpoint_every_n_steps: 30  # exercise the mid-epoch checkpoint path even on a short run
+  log_every_n_steps: 100
+  checkpoint_every_n_steps: 500  # exercise the mid-epoch checkpoint path even on a short run
 
 folds_to_run: [0]         # only one fold
 
