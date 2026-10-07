@@ -25,7 +25,7 @@ train:
   grad_accum_steps: 1
   lr: 2.0e-5
   head_lr: 1.0e-4         # matches the real config.yaml (equal to lr, not 5x)
-  delta_lr: 2.0e-6          # matches the real config.yaml
+  delta_lr: 2.0e-5          # matches the real config.yaml
   weight_decay: 0.01
   warmup_ratio: 0.06
   scheduler: cosine
