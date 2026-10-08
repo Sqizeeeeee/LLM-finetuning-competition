@@ -19,11 +19,11 @@ model:
   delta_init: 0.0        # initial value of the learnable delta parameter
 
 train:
-  epochs: 4               # NOTE: was 3; bumped to 4 after reward collapse fix (see notes)
+  epochs: 4                # NOTE: was 3; bumped to 4 after reward collapse fix (see notes)
   batch_size: 4            # NOTE: was 8; reduced + grad_accum_steps added to fix OOM w/ gradient checkpointing
   eval_batch_size: 8
   grad_accum_steps: 2      # effective batch size = batch_size * grad_accum_steps = 8
-  lr: 2.0e-5
+  lr: 5.0e-5               # was 2e-5 — testing whether the encoder itself is the bottleneck
   head_lr: 1.0e-4          # NOTE: was 1.0e-4 (5x lr) — this caused delta to collapse to the class prior
                             # before the encoder learned anything; fixed by matching head_lr to lr.
                             # Current result (fold 0, 3 epochs under this config): val_log_loss
