@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from transformers import AutoConfig, AutoModel
 
 
@@ -24,6 +25,8 @@ class RewardModel(nn.Module):
         pooling: str = "cls",
         dropout: float = 0.1,
         delta_init: float = 0.0,
+        nu_init: float = 0.0,
+        tie_mode: str = 'delta'
     ):
         super().__init__()
         if pooling not in ("cls", "mean"):
@@ -44,10 +47,13 @@ class RewardModel(nn.Module):
 
         # Bradley-Terry Variant A: learnable tie threshold.
         self.delta = nn.Parameter(torch.tensor(float(delta_init)))
+        self.log_nu = nn.Parameter(torch.tensor(float(nu_init)))
 
         # Small eps to keep log() numerically safe when a probability
         # rounds to exactly 0 under fp16 autocast.
         self._eps = 1e-6
+
+        self.tie_mode = tie_mode
 
     def _pool(self, last_hidden_state: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         if self.pooling == "cls":
@@ -80,9 +86,23 @@ class RewardModel(nn.Module):
 
         d = r_a - r_b
 
-        p_a = torch.sigmoid(d - self.delta)
-        p_b = torch.sigmoid(-d - self.delta)
-        p_tie = (1.0 - p_a - p_b).clamp(min=self._eps)
+        if self.tie_mode == 'delta':
+
+            p_a = torch.sigmoid(d - self.delta)
+            p_b = torch.sigmoid(-d - self.delta)
+            p_tie = (1.0 - p_a - p_b).clamp(min=self._eps)
+
+        else:
+            d = d.clamp(-30, 30)
+
+            nu = F.softplus(self.log_nu)
+            exp_half_d = torch.exp(d/2)
+            exp_neg_half_d = torch.exp(-d/2)
+            denom = exp_half_d + exp_neg_half_d + nu
+
+            p_a = exp_half_d / denom
+            p_b = exp_neg_half_d / denom
+            p_tie = nu / denom
 
         class_logits = torch.stack(
             [torch.log(p_a.clamp(min=self._eps)),
@@ -91,13 +111,28 @@ class RewardModel(nn.Module):
             dim=1,
         )  # (batch, 3)
 
-        return {
-            "r_a": r_a,
-            "r_b": r_b,
-            "d": d,
-            "delta": self.delta,
-            "p_a": p_a,
-            "p_b": p_b,
-            "p_tie": p_tie,
-            "class_logits": class_logits,
-        }
+        if self.tie_mode == 'nu':
+
+            return {
+                "r_a": r_a,
+                "r_b": r_b,
+                "d": d,
+                "nu": F.softplus(self.log_nu),
+                "p_a": p_a,
+                "p_b": p_b,
+                "p_tie": p_tie,
+                "class_logits": class_logits,
+            }
+
+        else:
+
+            return {
+                "r_a": r_a,
+                "r_b": r_b,
+                "d": d,
+                "delta": self.delta,
+                "p_a": p_a,
+                "p_b": p_b,
+                "p_tie": p_tie,
+                "class_logits": class_logits,
+            }

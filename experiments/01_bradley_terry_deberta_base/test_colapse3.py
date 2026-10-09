@@ -14,8 +14,8 @@ from transformers import AutoTokenizer
 ROOT = Path(__file__).resolve().parents[2]
 EXP = ROOT / "experiments/01_bradley_terry_deberta_base"
 sys.path.insert(0, str(EXP))
-from dataset import RewardPairCollator, RewardPairDataset
-from reward_model import RewardModel
+from dataset import RewardPairCollator, RewardPairDataset # noqa: E402
+from reward_model import RewardModel # noqa: E402
 
 DATA = ROOT / "data/processed/BT/train_bt.parquet"
 N_ROWS = 32

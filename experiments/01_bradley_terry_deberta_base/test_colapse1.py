@@ -14,11 +14,11 @@ from transformers import AutoTokenizer
 ROOT = Path.cwd()  # run from repo root
 EXP = ROOT / "experiments/01_bradley_terry_deberta_base"
 sys.path.insert(0, str(EXP))
-from dataset import RewardPairCollator, RewardPairDataset
-from reward_model import RewardModel
+from dataset import RewardPairCollator, RewardPairDataset # noqa: E402
+from reward_model import RewardModel # noqa: E402
 
-FOLD = 1
-CKPT = EXP / "res" / f"fold{FOLD}" / "best.pt"
+FOLD = 0
+CKPT = EXP / "res_smoke_test" / f"fold{FOLD}" / "best.pt"
 DATA = ROOT / "data/processed/BT/train_bt.parquet"
 N_ROWS = 400        # lower it if CPU inference is too slow
 MAX_LENGTH = 512    # shorter than the 1024 used in training, to keep CPU inference fast
@@ -30,8 +30,8 @@ val_df = df[df["fold"] == FOLD].sample(N_ROWS, random_state=42).reset_index(drop
 prior = train_df["winner"].value_counts(normalize=True).reindex(["a", "b", "tie"]).to_numpy()
 
 tok = AutoTokenizer.from_pretrained("microsoft/deberta-v3-base")
-model = RewardModel()  # DeBERTa crashes on MPS, so stay on CPU
-model.load_state_dict(torch.load(CKPT, map_location="cpu"))
+model = RewardModel(tie_mode='nu')  # DeBERTa crashes on MPS, so stay on CPU
+model.load_state_dict(torch.load(CKPT, map_location="cpu"),  strict=False)
 model.eval()
 
 loader = DataLoader(

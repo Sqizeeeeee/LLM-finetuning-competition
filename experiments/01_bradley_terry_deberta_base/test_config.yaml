@@ -14,26 +14,28 @@ data:
 model:
   backbone: microsoft/deberta-v3-base
   pooling: cls
-  max_length: 256        # shorter than the real 1024, just to run fast
+  max_length: 256        # keep short for CPU speed; this is about validating the training trend, not exact final numbers
   dropout: 0.1
   delta_init: 0.0
+  tie_mode: 'delta'       # back to delta — nu tested worse
+  nu_init: 0.0
 
 train:
-  epochs: 1
+  epochs: 3
   batch_size: 4
   eval_batch_size: 8
   grad_accum_steps: 1
-  lr: 5.0e-5              # matches the real config.yaml
-  head_lr: 1.0e-4         # matches the real config.yaml (equal to lr, not 5x)
-  delta_lr: 2.0e-5        # matches the real config.yaml
+  lr: 5.0e-5
+  head_lr: 1.0e-4
+  tie_lr: 2.0e-5
   weight_decay: 0.01
   warmup_ratio: 0.06
   scheduler: cosine
   max_grad_norm: 1.0
   precision: fp16
-  num_workers: 0          # simpler to debug without worker processes
+  num_workers: 0
   log_every_n_steps: 100
-  checkpoint_every_n_steps: 500  # exercise the mid-epoch checkpoint path even on a short run
+  checkpoint_every_n_steps: 500
 
 folds_to_run: [0]         # only one fold
 

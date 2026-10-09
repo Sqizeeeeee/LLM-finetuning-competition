@@ -26,3 +26,6 @@ inference-baseline: finetune-ensemble
 smoke-bt:
 	python experiments/01_bradley_terry_deberta_base/train.py \
 		--config=experiments/01_bradley_terry_deberta_base/test_config.yaml
+
+caff:
+	caffeinate -id

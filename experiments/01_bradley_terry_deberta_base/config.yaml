@@ -32,7 +32,7 @@ train:
                             # randomly-initialized head and needs revisiting (e.g. separate, smaller lr
                             # for delta specifically vs. a larger one for reward_head).
 
-  delta_lr: 2.0e-5          # NOTE: new — delta used to share head_lr and won race to the class-prior
+  tie_lr: 2.0e-5          # NOTE: new — delta used to share head_lr and won race to the class-prior
                              # solution before the encoder learned anything (reward collapse). Now kept
                              # deliberately slow, separate from reward_head's lr.
   weight_decay: 0.01

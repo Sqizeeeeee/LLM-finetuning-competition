@@ -15,7 +15,7 @@ import yaml
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, get_cosine_schedule_with_warmup, get_linear_schedule_with_warmup
 
-from dataset import RewardPairCollator, RewardPairDataset, WINNER_TO_LABEL, load_fold_split
+from dataset import RewardPairCollator, RewardPairDataset, load_fold_split
 from reward_model import RewardModel
 
 
@@ -38,7 +38,7 @@ def get_device(requested: str = "auto") -> torch.device:
     return torch.device("cpu")
 
 
-def build_param_groups(model: RewardModel, lr: float, head_lr: float, delta_lr: float, weight_decay: float):
+def build_param_groups(model: RewardModel, lr: float, head_lr: float, tie_lr: float, weight_decay: float):
     no_decay = ("bias", "LayerNorm.weight", "layer_norm.weight")
     encoder_decay, encoder_no_decay = [], []
 
@@ -47,11 +47,13 @@ def build_param_groups(model: RewardModel, lr: float, head_lr: float, delta_lr: 
             continue
         (encoder_no_decay if any(nd in name for nd in no_decay) else encoder_decay).append(param)
 
+    tie_param = model.delta if model.tie_mode == "delta" else model.log_nu
+
     return [
         {"params": encoder_decay, "lr": lr, "weight_decay": weight_decay},
         {"params": encoder_no_decay, "lr": lr, "weight_decay": 0.0},
         {"params": list(model.reward_head.parameters()), "lr": head_lr, "weight_decay": 0.0},
-        {"params": [model.delta], "lr": delta_lr, "weight_decay": 0.0},
+        {"params": [tie_param], "lr": tie_lr, "weight_decay": 0.0},
     ]
 
 
@@ -156,6 +158,8 @@ def run_epoch(
         if train and log_every_n_steps and (step + 1) % log_every_n_steps == 0:
             print(f"    step {step + 1}/{len(loader)} | loss {total_loss / n_batches:.4f} "
                   f"| delta {model.delta.item():.4f}")
+            if model.tie_mode == 'nu':
+                print(F.softplus(model.log_nu).item())
 
     all_probs = torch.cat(all_probs).numpy()
     all_labels = torch.cat(all_labels).numpy()
@@ -189,10 +193,12 @@ def run_fold(cfg: dict, fold: int, tokenizer, device,
         pooling=cfg["model"]["pooling"],
         dropout=cfg["model"]["dropout"],
         delta_init=cfg["model"]["delta_init"],
+        nu_init=cfg["model"].get("nu_init", 0.0),
+        tie_mode=cfg["model"].get("tie_mode", "delta"),
     ).to(device)
 
     optimizer = torch.optim.AdamW(
-        build_param_groups(model, cfg["train"]["lr"], cfg["train"]["head_lr"], cfg["train"]["delta_lr"], cfg["train"]["weight_decay"])
+        build_param_groups(model, cfg["train"]["lr"], cfg["train"]["head_lr"], cfg["train"]["tie_lr"], cfg["train"]["weight_decay"])
     )
 
     n_steps_per_epoch = len(train_ds) // cfg["train"]["batch_size"] // cfg["train"]["grad_accum_steps"]
