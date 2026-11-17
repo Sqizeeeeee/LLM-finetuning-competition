@@ -49,5 +49,6 @@ Since this is a code competition, the real submission is a Kaggle notebook, not 
 local file. This table tracks what was submitted and how it scored.
 
 | date       | experiment          | kaggle notebook                 | version | local OOF | public score | notes |
-|------------|----------------------|-----------------------------------|---------|-----------|---------------|-------|
-| 2026-09-12 | 00_manual_features    | LLM-finetuning-manual-features     | v2      | 1.04576   | 1.04598       | LogReg + LightGBM ensemble (w=0.95) on hand-crafted features |
+|------------|---------------------|---------------------------------|---------|-----------|--------------|-------|
+| 2026-09-12 | 00_manual_features  | LLM-finetuning-manual-features  | v2      | 1.04576   | 1.04598      | LogReg + LightGBM ensemble (w=0.95) on hand-crafted features |
+| 2026-10-14 | 00_deberta_bradley-terry  | llm-finetuning-bt-deberta  | v3      | -  | 1.26893     | DeebertaV3 + Bredley-Terry|
