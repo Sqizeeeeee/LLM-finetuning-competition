@@ -13,5 +13,4 @@ models_npz/
 
 
 # local debug files
-experiments/01_bradley_terry_deberta_base/res
 experiments/01_bradley_terry_deberta_base/res_smoke_test/*
