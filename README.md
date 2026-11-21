@@ -51,7 +51,7 @@ local file. This table tracks what was submitted and how it scored.
 | Date | Experiment | Kaggle notebook | Version | Local OOF | Public score | Notes |
 | --- | --- | --- | --- | ---: | ---: | --- |
 | 2026-09-12 | `00_manual_features` | LLM-finetuning-manual-features | v2 | 1.04576 | 1.04598 | LogReg + LightGBM on hand-crafted features |
-| — | `01_bradley_terry_deberta_base` | LLM-finetuning-BT-deberta | v6 | — | 1.26893 | DeBERTa V3 + Bradley–Terry |
+| 2026-11-03 | `01_bradley_terry_deberta_base` | LLM-finetuning-BT-deberta | v6 | — | 1.26893 | DeBERTa V3 + Bradley–Terry |
 | 2026-11-21 | `02_frozen_deberta` | LLM Finetuning Frozen DeBERTa Exp2 | v1 | **1.02238** | **1.02010** | Frozen DeBERTa embeddings + LightGBM |
 
 Exp2 is our best submission so far. It brought public log loss down from 1.04598 to 1.02010, a gain of 0.02588 over the hand-crafted baseline. In local validation, cosine similarity and the distance between embeddings helped a little. Most of the gain came from giving LightGBM the full `A − B` embedding difference. See the [exp2 notes](experiments/02_frozen_deberta/notes.md) for the breakdown.
