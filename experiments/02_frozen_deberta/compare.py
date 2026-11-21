@@ -25,7 +25,7 @@ def score(y, preds):
     }
 
 
-def compare(df, y, baseline, manual, similarity, difference, config):
+def compare(df, y, baseline, manual, similarity, difference, config, export_dir=None):
     sys.path.insert(0, str(EXP0))
     from boosting import BoostingModel
 
@@ -36,12 +36,19 @@ def compare(df, y, baseline, manual, similarity, difference, config):
         ("similarity", features),
         ("similarity_and_difference", np.column_stack((features, difference))),
     ]:
+        if export_dir is not None and name == "similarity":
+            continue
         preds = np.empty_like(baseline)
         for fold in np.unique(folds):
             val = folds == fold
             model = BoostingModel(config["lightgbm"])
             model.fit(matrix[~val], y[~val], matrix[val], y[val])
             preds[val] = model.predict_proba(matrix[val])
+            if export_dir is not None:
+                booster = model.model
+                if booster is None:
+                    raise RuntimeError(f"No trained LightGBM booster for fold {fold}.")
+                booster.save_model(str(export_dir / f"fold{fold}.txt"))
             print(f"{name} fold {fold}: {score(y[val], preds[val])}", flush=True)
         results[name] = preds
     return results
@@ -51,6 +58,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cache", type=Path, default=EXP_DIR / "res" / "features.npz")
     parser.add_argument("--output-dir", type=Path, default=EXP_DIR / "res")
+    parser.add_argument("--export-dir", type=Path, help="Export only the submission variant.")
     args = parser.parse_args()
 
     config = yaml.safe_load((EXP0 / "config.yaml").read_text())
@@ -72,7 +80,7 @@ def main():
 
     with np.load(args.cache) as cache:
         ids = pd.Index(cache["ids"])
-        order = ids.get_indexer(df["id"])
+        order = ids.get_indexer(pd.Index(df["id"]))
         if len(ids) != len(df) or (order < 0).any():
             raise ValueError("Embedding cache must contain every exp0 training ID.")
         similarity = cache["similarity"][order]
@@ -81,9 +89,18 @@ def main():
     if not np.isfinite(similarity).all() or not np.isfinite(difference).all():
         raise ValueError("Embedding cache contains non-finite features.")
 
+    if args.export_dir is not None:
+        args.export_dir.mkdir(parents=True, exist_ok=True)
     results = compare(
         df, y, baseline, df[feature_cols].to_numpy(), similarity, difference, config,
+        args.export_dir,
     )
+    if args.export_dir is not None:
+        (args.export_dir / "config.json").write_text(json.dumps({
+            **encoder, "feature_cols": feature_cols, "classes": CLASSES,
+            "folds": [int(fold) for fold in np.unique(df[fold_col])],
+        }, indent=2) + "\n")
+        return
     metrics = {}
     predictions = df[["id", fold_col]].copy()
     baseline_score = score(y, baseline)["log_loss"]

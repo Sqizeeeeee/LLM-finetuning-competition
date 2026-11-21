@@ -11,6 +11,7 @@ __pycache__/
 models/
 models_npz/
 
+build/
 
 # local debug files
 experiments/01_bradley_terry_deberta_base/res_smoke_test/*
