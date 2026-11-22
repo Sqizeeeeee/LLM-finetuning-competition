@@ -1,0 +1,4 @@
+/res/*
+!/res/fold4-full/
+/res/fold4-full/*
+!/res/fold4-full/metrics.json

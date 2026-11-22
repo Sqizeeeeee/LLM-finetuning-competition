@@ -1,0 +1,24 @@
+{
+  "fold": 4,
+  "train_rows": 45976,
+  "val_rows": 11494,
+  "backbone": "microsoft/deberta-v3-base",
+  "max_length": 512,
+  "frozen": {
+    "log_loss": 1.0204984871288467,
+    "tie_log_loss": 1.1328936151266977,
+    "best_iteration": 188,
+    "median_val_difference_norm": 5.287363529205322
+  },
+  "finetuned": {
+    "log_loss": 1.0375202581070273,
+    "tie_log_loss": 1.1374988110782047,
+    "best_iteration": 113,
+    "median_val_difference_norm": 0.03593509644269943
+  },
+  "blend_equal": {
+    "log_loss": 1.022336195848392,
+    "tie_log_loss": 1.1309209249277767
+  },
+  "delta_log_loss": 0.017021770978180584
+}
